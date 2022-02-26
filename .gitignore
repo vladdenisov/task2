@@ -1,0 +1,32 @@
+.gradle
+.idea
+/build/
+/target/
+
+# Ignore Gradle GUI config
+gradle-app.setting
+
+# Cache of project
+.gradletasknamecache
+
+# # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
+# gradle/wrapper/gradle-wrapper.properties
+
+*.iml
+# Ignore Gradle build output directory
+build
+
+idea/*.xml
+.idea/.name
+.idea/copyright
+.idea/libraries
+.idea/shelf
+target
+out
+build/*
+.gradle/*
+report/*
+
+*.ipr
+*.iws
+*.zip
