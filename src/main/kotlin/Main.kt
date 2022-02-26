@@ -84,7 +84,15 @@ fun humanReadableByteCountSI(byte: Long): String {
     return String.format("%.1f %cB", bytes / 1000.0, ci.current())
 }
 
-fun displayMeta(file: File, isLong: Boolean, isHuman: Boolean): String {
+fun displaySize(file: File, isHuman: Boolean): String {
+    if (isHuman) {
+        return humanReadableByteCountSI(file.length())
+    }
+    return "${file.length()} B"
+}
+
+
+fun displayMeta(file: File, isLong: Boolean, isHuman: Boolean, isConsole: Boolean): String {
     val result = StringBuilder()
     if (isLong || isHuman) {
         result.append("${displayPermissions(file, isHuman)} ")
@@ -93,52 +101,62 @@ fun displayMeta(file: File, isLong: Boolean, isHuman: Boolean): String {
         result.append("${formatTime(file.lastModified())} ")
     }
     // Print the name of directory red
-    if (file.isDirectory)
+    if (file.isDirectory && !isConsole)
         result.append("\u001b[31m${file.name}\u001b[0m")
     else
         result.append(file.name)
-    if (isLong) {
-        result.append(" ${file.length()} B")
-    }
-    if (isHuman) {
-        result.append(" ${humanReadableByteCountSI(file.length())}")
+    if (!file.isDirectory) {
+        result.append(" ${displaySize(file, isHuman)}")
     }
     return result.toString()
 }
 
-fun generateOutput(path: String, isLong: Boolean, isHuman: Boolean, isReversed: Boolean): List<String> {
+fun generateOutput(path: String, isLong: Boolean, isHuman: Boolean, isReversed: Boolean, isConsole: Boolean): List<String> {
     var files = File(path).listFiles()?.sorted()!!
     if (isReversed)
         files = files.reversed()
     val strings = mutableListOf<String>()
     for (file in files) {
-        strings.add(displayMeta(file, isLong, isHuman))
+        strings.add(displayMeta(file, isLong, isHuman, isConsole))
     }
     return strings
 }
 
 
 fun main(args: Array<String>) {
-    val flags = mutableMapOf<Char, Boolean>(
+    val flags = mutableMapOf(
         'h' to false,
         'l' to false,
         'r' to false,
         'o' to false,
     )
     for (i in args.indices) {
-        if (args[i].contains('-') && args[i].length == 2) {
-            if (args[i][1] in flags) {
-                flags[args[i][1]] = true
+        if (args[i].contains('-') && args[i].length > 1) {
+            for (j in 1 until args[i].length) {
+                if (args[i][j] in flags) {
+                    flags[args[i][j]] = true
+                }
             }
         }
     }
-    val path = if (!args.last().contains('-')) {
-        Paths.get(args.last()).toAbsolutePath().toString()
+    val paths = args.filter { !it.contains('-') }
+    val path = if (paths.isNotEmpty() && !paths.last().contains('-') && (paths.size == 2 && flags.getOrDefault('o', false) )) {
+        Paths.get(paths.last()).toAbsolutePath().toString()
     } else {
         Paths.get("").toAbsolutePath().toString()
     }
-    val strings = generateOutput(path, flags.getOrDefault('l', false), flags.getOrDefault('h', false), flags.getOrDefault('r', false))
-    for (string in strings) {
-        println(string)
+    val strings = generateOutput(
+        path,
+        flags.getOrDefault('l', false),
+        flags.getOrDefault('h', false),
+        flags.getOrDefault('r', false),
+        flags.getOrDefault('o', false)
+    )
+    if (flags.getOrDefault('o', false)) {
+        File(paths[0]).writeText(strings.joinToString("\n"))
+    } else {
+        for (string in strings) {
+            println(string)
+        }
     }
 }
