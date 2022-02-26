@@ -105,7 +105,7 @@ fun displayMeta(file: File, isLong: Boolean, isHuman: Boolean, isConsole: Boolea
         result.append("\u001b[31m${file.name}\u001b[0m")
     else
         result.append(file.name)
-    if (!file.isDirectory) {
+    if (!file.isDirectory && (isLong || isConsole)) {
         result.append(" ${displaySize(file, isHuman)}")
     }
     return result.toString()
