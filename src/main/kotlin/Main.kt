@@ -7,34 +7,61 @@ import java.text.SimpleDateFormat
 import java.text.StringCharacterIterator
 import java.util.*
 
+fun permissionsFallback(file: File, numeric: Boolean? = false): String {
+    val permissions = StringBuilder("----")
+    var counter = 0
+    if (file.isDirectory) {
+        permissions[0] = 'd'
+    }
+    if (file.canRead()) {
+        permissions[1] = 'r'
+        counter += 4
+    }
+    if (file.canWrite()) {
+        permissions[2] = 'w'
+        counter += 2
+    }
+    if (file.canExecute()) {
+        permissions[3] = 'x'
+        counter += 1
+    }
+    if (numeric == true) {
+        return "${counter}00"
+    }
+    return permissions.toString()
+}
+
 
 fun displayPermissions(file: File, numeric: Boolean? = false): String {
-    val permissions = PosixFilePermissions.toString(Files.getPosixFilePermissions(file.toPath()))
-    if (numeric == true) {
-        val result = StringBuilder()
-        var current = 0
-        for (i in permissions.indices) {
-
-            if (permissions[i] == 'r') {
-                current += 4
+    try {
+        val permissions: String = PosixFilePermissions.toString(Files.getPosixFilePermissions(file.toPath()))
+        if (numeric == true) {
+            val result = StringBuilder()
+            var current = 0
+            for (i in permissions.indices) {
+                if (permissions[i] == 'r') {
+                    current += 4
+                }
+                if (permissions[i] == 'w') {
+                    current += 2
+                }
+                if (permissions[i] == 'x') {
+                    current += 1
+                }
+                if ((i + 1) % 3 == 0) {
+                    result.append(current)
+                    current = 0
+                }
             }
-            if (permissions[i] == 'w') {
-                current += 2
-            }
-            if (permissions[i] == 'x') {
-                current += 1
-            }
-            if ((i + 1) % 3 == 0) {
-                result.append(current)
-                current = 0
-            }
+            return result.toString()
         }
-        return result.toString()
-    }
-    return if (file.isDirectory) {
-        "d$permissions"
-    } else {
-        "-$permissions"
+        return if (file.isDirectory) {
+            "d$permissions"
+        } else {
+            "-$permissions"
+        }
+    } catch (e: java.lang.UnsupportedOperationException) {
+        return permissionsFallback(file, numeric)
     }
 }
 
@@ -65,7 +92,11 @@ fun displayMeta(file: File, isLong: Boolean, isHuman: Boolean): String {
     if (isLong) {
         result.append("${formatTime(file.lastModified())} ")
     }
-    result.append(file.name)
+    // Print the name of directory red
+    if (file.isDirectory)
+        result.append("\u001b[31m${file.name}\u001b[0m")
+    else
+        result.append(file.name)
     if (isLong) {
         result.append(" ${file.length()} B")
     }
@@ -101,7 +132,11 @@ fun main(args: Array<String>) {
             }
         }
     }
-    val path = Paths.get("").toAbsolutePath().toString()
+    val path = if (!args.last().contains('-')) {
+        Paths.get(args.last()).toAbsolutePath().toString()
+    } else {
+        Paths.get("").toAbsolutePath().toString()
+    }
     val strings = generateOutput(path, flags.getOrDefault('l', false), flags.getOrDefault('h', false), flags.getOrDefault('r', false))
     for (string in strings) {
         println(string)
