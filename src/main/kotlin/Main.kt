@@ -140,7 +140,10 @@ fun main(args: Array<String>) {
         }
     }
     val paths = args.filter { !it.contains('-') }
-    val path = if (paths.isNotEmpty() && !paths.last().contains('-') && (paths.size == 2 && flags.getOrDefault('o', false) )) {
+    val path = if (paths.isNotEmpty()
+        && !paths.last().contains('-')
+        && ((paths.size == 2 && flags.getOrDefault('o', false)) || !flags.getOrDefault('o', false) )
+    ) {
         Paths.get(paths.last()).toAbsolutePath().toString()
     } else {
         Paths.get("").toAbsolutePath().toString()
